@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AE — Transaction System</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg: #080b14;
+            --surface: #0e1320;
+            --surface2: #131929;
+            --border: rgba(255,255,255,0.07);
+            --border-glow: rgba(99,179,237,0.25);
+            --text: #e8edf5;
+            --muted: #5a6480;
+            --accent: #63b3ed;
+            --accent2: #9f7aea;
+            --green: #48bb78;
+            --red: #fc8181;
+        }
+        body.light {
+            --bg: #f0f4f8;
+            --surface: #ffffff;
+            --surface2: #e8edf5;
+            --border: rgba(0,0,0,0.08);
+            --border-glow: rgba(99,179,237,0.4);
+            --text: #1a202c;
+            --muted: #718096;
+            --green: #276749;
+            --red: #c53030;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; transition:background 0.3s,color 0.3s; }
+        body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse 80% 50% at 20% 10%,rgba(99,179,237,0.07) 0%,transparent 60%), radial-gradient(ellipse 60% 40% at 80% 80%,rgba(159,122,234,0.07) 0%,transparent 60%); pointer-events:none; z-index:0; }
+        body::after { content:''; position:fixed; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle,rgba(159,122,234,0.25) 0%,transparent 45%); pointer-events:none; z-index:0; left:var(--mx,50%); top:var(--my,50%); transform:translate(-50%,-50%); transition:left 0.07s ease,top 0.07s ease; }
+
+        /* LOGIN PAGE */
+        .login-page { position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center; }
+        .login-page.hidden { display:none; }
+        .login-card { background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:40px; width:100%; max-width:400px; position:relative; overflow:hidden; }
+        .login-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(99,179,237,0.3),transparent); }
+        .login-logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.2rem; margin-bottom:32px; justify-content:center; }
+        .login-logo-icon { font-size:22px; font-weight:800; letter-spacing:-2px; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .login-tabs { display:flex; background:var(--bg); border-radius:10px; padding:3px; margin-bottom:24px; gap:2px; }
+        .login-tab { flex:1; padding:8px; border:none; background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:500; border-radius:8px; cursor:pointer; transition:all 0.2s; }
+        .login-tab.active { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+        .login-input-group { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:13px 16px; margin-bottom:10px; transition:border-color 0.2s; }
+        .login-input-group:focus-within { border-color:var(--border-glow); }
+        .login-input-group input { background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.92rem; width:100%; }
+        .login-input-group input::placeholder { color:var(--muted); }
+        .login-btn { width:100%; padding:14px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer; margin-top:8px; transition:opacity 0.2s; }
+        .login-btn:hover { opacity:0.9; }
+        #login-msg { margin-top:10px; font-size:0.82rem; text-align:center; min-height:18px; color:var(--green); }
+        #login-msg.error { color:var(--red); }
+
+        /* SOCIAL LINKS */
+        .social-wrapper { display:flex; justify-content:center; gap:12px; margin-top:80px; padding-bottom:20px; }
+        .social-icon { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s cubic-bezier(0.68,-0.55,0.265,1.55); text-decoration:none; color:var(--text); font-size:18px; }
+        .social-icon:hover { transform:translateY(-4px); }
+        .social-icon .tooltip { position:absolute; top:-36px; background:var(--surface); border:1px solid var(--border); color:var(--text); font-size:0.72rem; font-family:'DM Sans',sans-serif; padding:4px 8px; border-radius:6px; white-space:nowrap; opacity:0; pointer-events:none; transition:all 0.2s; }
+        .social-icon:hover .tooltip { opacity:1; top:-40px; }
+        .social-icon.instagram:hover { background:#e4405f; border-color:#e4405f; color:#fff; }
+        .social-icon.linkedin:hover { background:#0077b5; border-color:#0077b5; color:#fff; }
+        .social-icon.github:hover { background:#333; border-color:#333; color:#fff; }
+
+        /* LOGOUT BUTTON */
+        .logout-btn { display:flex; align-items:center; justify-content:flex-start; width:42px; height:42px; border:none; border-radius:50%; cursor:pointer; position:relative; overflow:hidden; transition:all 0.3s; box-shadow:2px 2px 10px rgba(0,0,0,0.2); background:rgb(255,65,65); }
+        .logout-btn .sign { width:100%; display:flex; align-items:center; justify-content:center; transition:0.3s; }
+        .logout-btn .sign svg { width:16px; }
+        .logout-btn .sign svg path { fill:white; }
+        .logout-btn .btn-text { position:absolute; right:0; width:0; opacity:0; color:white; font-size:0.85rem; font-weight:600; transition:0.3s; white-space:nowrap; font-family:'DM Sans',sans-serif; }
+        .logout-btn:hover { width:110px; border-radius:40px; }
+        .logout-btn:hover .sign { width:30%; padding-left:16px; }
+        .logout-btn:hover .btn-text { opacity:1; width:70%; padding-right:10px; }
+        .logout-btn:active { transform:translate(2px,2px); }
+
+        /* THEME TOGGLE */
+        .theme-switch { --toggle-size:22px; font-size:var(--toggle-size); }
+        .theme-switch__container { width:5.625em; height:2.5em; background-color:#3D7EAE; border-radius:6.25em; overflow:hidden; cursor:pointer; box-shadow:0em -0.062em 0.062em rgba(0,0,0,0.25),0em 0.062em 0.125em rgba(255,255,255,0.94); transition:0.5s cubic-bezier(0,-0.02,0.4,1.25); position:relative; }
+        .theme-switch__container::before { content:""; position:absolute; z-index:1; inset:0; box-shadow:0em 0.05em 0.187em rgba(0,0,0,0.25) inset; border-radius:6.25em; }
+        .theme-switch__checkbox { display:none; }
+        .theme-switch__circle-container { width:3.375em; height:3.375em; background-color:rgba(255,255,255,0.1); position:absolute; left:calc((3.375em - 2.5em) / 2 * -1); top:calc((3.375em - 2.5em) / 2 * -1); border-radius:6.25em; box-shadow:inset 0 0 0 3.375em rgba(255,255,255,0.1),0 0 0 0.625em rgba(255,255,255,0.1),0 0 0 1.25em rgba(255,255,255,0.1); display:flex; transition:0.3s cubic-bezier(0,-0.02,0.35,1.17); pointer-events:none; }
+        .theme-switch__sun-moon-container { pointer-events:auto; position:relative; z-index:2; width:2.125em; height:2.125em; margin:auto; border-radius:6.25em; background-color:#ECCA2F; box-shadow:0.062em 0.062em 0.062em 0em rgba(254,255,239,0.61) inset,0em -0.062em 0.062em 0em #a1872a inset; filter:drop-shadow(0.062em 0.125em 0.125em rgba(0,0,0,0.25)); overflow:hidden; transition:0.5s cubic-bezier(0,-0.02,0.4,1.25); }
+        .theme-switch__moon { transform:translateX(100%); width:100%; height:100%; background-color:#C4C9D1; border-radius:inherit; box-shadow:0.062em 0.062em 0.062em 0em rgba(254,255,239,0.61) inset,0em -0.062em 0.062em 0em #969696 inset; transition:0.5s cubic-bezier(0,-0.02,0.4,1.25); position:relative; }
+        .theme-switch__spot { position:absolute; top:0.75em; left:0.312em; width:0.75em; height:0.75em; border-radius:6.25em; background-color:#959DB1; box-shadow:0em 0.0312em 0.062em rgba(0,0,0,0.25) inset; }
+        .theme-switch__spot:nth-of-type(2) { width:0.375em; height:0.375em; top:0.937em; left:1.375em; }
+        .theme-switch__spot:nth-last-of-type(3) { width:0.25em; height:0.25em; top:0.312em; left:0.812em; }
+        .theme-switch__clouds { width:1.25em; height:1.25em; background-color:#F3FDFF; border-radius:6.25em; position:absolute; bottom:-0.625em; left:0.312em; box-shadow:0.937em 0.312em #F3FDFF,-0.312em -0.312em #AACADF,1.437em 0.375em #F3FDFF,0.5em -0.125em #AACADF,2.187em 0 #F3FDFF,1.25em -0.062em #AACADF,2.937em 0.312em #F3FDFF,2em -0.312em #AACADF,3.625em -0.062em #F3FDFF,2.625em 0em #AACADF,4.5em -0.312em #F3FDFF,3.375em -0.437em #AACADF; transition:0.5s cubic-bezier(0,-0.02,0.4,1.25); }
+        .theme-switch__stars-container { position:absolute; color:#fff; top:-100%; left:0.312em; width:2.75em; height:auto; transition:0.5s cubic-bezier(0,-0.02,0.4,1.25); }
+        .theme-switch__checkbox:checked + .theme-switch__container { background-color:#1D1F2C; }
+        .theme-switch__checkbox:checked + .theme-switch__container .theme-switch__circle-container { left:calc(100% - calc((3.375em - 2.5em) / 2 * -1) - 3.375em); }
+        .theme-switch__checkbox:checked + .theme-switch__container .theme-switch__moon { transform:translate(0); }
+        .theme-switch__checkbox:checked + .theme-switch__container .theme-switch__clouds { bottom:-4.062em; }
+        .theme-switch__checkbox:checked + .theme-switch__container .theme-switch__stars-container { top:50%; transform:translateY(-50%); }
+
+        .app { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:40px 24px 80px; }
+        header { display:flex; align-items:center; justify-content:space-between; margin-bottom:48px; }
+        .logo { display:flex; align-items:center; gap:10px; font-weight:600; font-size:1.1rem; letter-spacing:-0.02em; }
+        .logo-icon { width:32px; height:32px; background:transparent; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; letter-spacing:-2px; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .header-right { display:flex; align-items:center; gap:16px; }
+        .header-stats { display:flex; gap:24px; }
+        .stat { text-align:right; }
+        .stat-val { font-family:'DM Mono',monospace; font-size:0.9rem; font-weight:500; color:var(--green); }
+        .stat-label { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+        .layout { display:grid; grid-template-columns:420px 1fr; gap:20px; align-items:start; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:28px; position:relative; overflow:hidden; }
+        .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(99,179,237,0.3),transparent); }
+        .tabs { display:flex; background:var(--bg); border-radius:12px; padding:4px; margin-bottom:28px; gap:2px; }
+        .tab { flex:1; padding:9px 12px; border:none; background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:500; border-radius:9px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
+        .tab.active { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+        .section-label { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:8px; }
+        .token-selector { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:border-color 0.2s; }
+        .token-selector:hover { border-color:var(--border-glow); }
+        .token-left { display:flex; align-items:center; gap:10px; }
+        .token-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; flex-shrink:0; }
+        .token-name { font-weight:600; font-size:0.95rem; }
+        .token-network { font-size:0.75rem; color:var(--muted); }
+        .token-amount-input { background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Mono',monospace; font-size:1.2rem; font-weight:500; text-align:right; width:120px; }
+        .token-amount-input::placeholder { color:var(--muted); }
+        .swap-arrow { width:36px; height:36px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; display:flex; align-items:center; justify-content:center; margin:8px auto; cursor:pointer; transition:all 0.2s; font-size:14px; }
+        .swap-arrow:hover { border-color:var(--border-glow); color:var(--accent); }
+        .addr-wrap { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:20px; transition:border-color 0.2s; }
+        .addr-wrap:focus-within { border-color:var(--border-glow); }
+        .addr-input { background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Mono',monospace; font-size:0.82rem; width:100%; }
+        .addr-input::placeholder { color:var(--muted); }
+        .fee-row { display:flex; justify-content:space-between; font-size:0.8rem; color:var(--muted); margin-bottom:8px; }
+        .fee-row span:last-child { color:var(--text); font-family:'DM Mono',monospace; }
+        .cta-btn { width:100%; padding:15px; border:none; border-radius:14px; background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%); color:#fff; font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer; transition:opacity 0.2s,transform 0.1s; margin-top:20px; letter-spacing:0.01em; }
+        .cta-btn:hover { opacity:0.9; }
+        .cta-btn:active { transform:scale(0.99); }
+        #msg,#msg-crypto { margin-top:12px; font-size:0.82rem; text-align:center; min-height:18px; color:var(--green); }
+        #msg.error,#msg-crypto.error { color:var(--red); }
+        .right-panel { display:flex; flex-direction:column; gap:16px; }
+        .history-card { padding:24px; }
+        .panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+        .panel-title { font-size:0.85rem; font-weight:600; letter-spacing:-0.01em; }
+        .badge-count { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:2px 10px; font-size:0.72rem; font-family:'DM Mono',monospace; color:var(--muted); }
+        .tx-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); animation:fadeIn 0.3s ease; }
+        .tx-row:last-child { border-bottom:none; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+        .tx-icon { width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+        .tx-info { flex:1; min-width:0; }
+        .tx-title { font-size:0.85rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tx-time { font-size:0.72rem; color:var(--muted); font-family:'DM Mono',monospace; margin-top:2px; }
+        .tx-amount { font-family:'DM Mono',monospace; font-size:0.88rem; font-weight:500; text-align:right; }
+        .tx-type { font-size:0.68rem; color:var(--muted); text-align:right; margin-top:2px; }
+        .empty-state { text-align:center; color:var(--muted); font-size:0.85rem; padding:32px 0; }
+        .token-options { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface2); border:1px solid var(--border); border-radius:12px; z-index:10; overflow:hidden; }
+        .token-options.open { display:block; }
+        .token-option { display:flex; align-items:center; gap:10px; padding:12px 16px; cursor:pointer; transition:background 0.15s; font-size:0.88rem; }
+        .token-option:hover { background:rgba(255,255,255,0.04); }
+        .token-option-icon { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; }
+        .relative { position:relative; }
+        .fiat-inputs { display:none; }
+        .fiat-inputs.active { display:block; }
+        .crypto-inputs { display:none; }
+        .crypto-inputs.active { display:block; }
+        .input-group { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:10px; transition:border-color 0.2s; }
+        .input-group:focus-within { border-color:var(--border-glow); }
+        .input-group input { background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.92rem; width:100%; }
+        .input-group input::placeholder { color:var(--muted); }
+        .network-pills { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+        .pill { padding:5px 12px; border-radius:20px; font-size:0.72rem; font-weight:500; border:1px solid var(--border); background:var(--surface2); color:var(--muted); cursor:pointer; transition:all 0.15s; }
+        .pill.active { border-color:var(--accent); color:var(--accent); background:rgba(99,179,237,0.08); }
+        .welcome-user { font-size:0.8rem; color:var(--muted); }
+        .welcome-user span { color:var(--accent); font-weight:600; }
+        @media(max-width:800px){ .layout{grid-template-columns:1fr} .header-stats{display:none} }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div class="login-page" id="login-page">
+    <div class="login-card">
+        <div class="login-logo"><div class="login-logo-icon">AE</div></div>
+        <div class="login-tabs">
+            <button class="login-tab active" onclick="switchLoginTab('login',this)">Sign In</button>
+            <button class="login-tab" onclick="switchLoginTab('register',this)">Register</button>
+        </div>
+        <div id="login-panel">
+            <div class="login-input-group"><input type="text" id="l-username" placeholder="Username"/></div>
+            <div class="login-input-group"><input type="password" id="l-password" placeholder="Password"/></div>
+            <button class="login-btn" onclick="doLogin()">Sign In →</button>
+        </div>
+        <div id="register-panel" style="display:none">
+            <div class="login-input-group"><input type="text" id="r-username" placeholder="Choose a username"/></div>
+            <div class="login-input-group"><input type="password" id="r-password" placeholder="Choose a password"/></div>
+            <button class="login-btn" onclick="doRegister()">Create Account →</button>
+        </div>
+        <div id="login-msg"></div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app">
+    <header>
+        <div class="logo"><div class="logo-icon">AE</div></div>
+        <div class="header-right">
+            <div class="header-stats">
+                <div class="stat"><div class="stat-val" id="total-vol">$0.00</div><div class="stat-label">Total Volume</div></div>
+                <div class="stat"><div class="stat-val" id="tx-count">0</div><div class="stat-label">Transactions</div></div>
+            </div>
+            <!-- Theme toggle -->
+            <label class="theme-switch">
+                <input type="checkbox" class="theme-switch__checkbox" id="theme-toggle"/>
+                <div class="theme-switch__container">
+                    <div class="theme-switch__clouds"></div>
+                    <div class="theme-switch__stars-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 55" fill="none">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M135.831 3.00688C135.055 3.85027 134.111 4.29946 133 4.35447C134.111 4.40947 135.055 4.85867 135.831 5.71206C136.608 6.55545 136.996 7.56714 136.996 8.72909C136.996 7.56714 137.385 6.55545 138.161 5.71206C138.937 4.85867 139.881 4.40947 140.992 4.35447C139.881 4.29946 138.937 3.85027 138.161 3.00688C137.385 2.16348 136.996 1.1518 136.996 0C136.996 1.1518 136.608 2.16348 135.831 3.00688Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <div class="theme-switch__circle-container">
+                        <div class="theme-switch__sun-moon-container">
+                            <div class="theme-switch__moon">
+                                <div class="theme-switch__spot"></div>
+                                <div class="theme-switch__spot"></div>
+                                <div class="theme-switch__spot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </label>
+            <!-- Logout -->
+            <button class="logout-btn" onclick="doLogout()">
+                <div class="sign">
+                    <svg viewBox="0 0 512 512"><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"/></svg>
+                </div>
+                <div class="btn-text">Logout</div>
+            </button>
+        </div>
+    </header>
+    <div class="layout">
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('fiat',this)">💸 Bank Transfer</button>
+                <button class="tab" onclick="switchTab('crypto',this)">₿ Crypto Transfer</button>
+            </div>
+            <div class="fiat-inputs active" id="fiat-panel">
+                <div class="section-label">From</div>
+                <div class="input-group"><input type="text" id="f-sender" placeholder="Sender name"/></div>
+                <div class="section-label">To</div>
+                <div class="input-group"><input type="text" id="f-receiver" placeholder="Receiver name"/></div>
+                <div class="section-label">Amount (USD)</div>
+                <div class="input-group"><input type="number" id="f-amount" placeholder="0.00"/></div>
+                <div class="fee-row"><span>Network fee</span><span>$0.00</span></div>
+                <div class="fee-row"><span>Est. arrival</span><span>Instant</span></div>
+                <button class="cta-btn" onclick="sendFiat()">Send Transfer →</button>
+                <div id="msg"></div>
+            </div>
+            <div class="crypto-inputs" id="crypto-panel">
+                <div class="section-label">You send</div>
+                <div class="relative">
+                    <div class="token-selector" onclick="toggleTokenDrop('from-drop')">
+                        <div class="token-left">
+                            <div class="token-icon" id="from-icon" style="background:rgba(247,147,26,0.15);color:#f7931a">₿</div>
+                            <div><div class="token-name" id="from-name">Bitcoin</div><div class="token-network" id="from-net">BTC Network</div></div>
+                        </div>
+                        <input class="token-amount-input" id="c-amount" type="number" placeholder="0.00" onclick="event.stopPropagation()"/>
+                    </div>
+                    <div class="token-options" id="from-drop">
+                        <div class="token-option" onclick="selectToken('from','BTC','Bitcoin','BTC Network','₿','rgba(247,147,26,0.15)','#f7931a')"><div class="token-option-icon" style="background:rgba(247,147,26,0.15);color:#f7931a">₿</div>Bitcoin (BTC)</div>
+                        <div class="token-option" onclick="selectToken('from','ETH','Ethereum','ERC-20','⬡','rgba(98,126,234,0.15)','#627eea')"><div class="token-option-icon" style="background:rgba(98,126,234,0.15);color:#627eea">⬡</div>Ethereum (ETH)</div>
+                        <div class="token-option" onclick="selectToken('from','SOL','Solana','Solana Network','◎','rgba(153,69,255,0.15)','#9945ff')"><div class="token-option-icon" style="background:rgba(153,69,255,0.15);color:#9945ff">◎</div>Solana (SOL)</div>
+                        <div class="token-option" onclick="selectToken('from','USDC','USD Coin','ERC-20','$','rgba(39,117,202,0.15)','#2775ca')"><div class="token-option-icon" style="background:rgba(39,117,202,0.15);color:#2775ca">$</div>USD Coin (USDC)</div>
+                    </div>
+                </div>
+                <div class="swap-arrow" onclick="swapTokens()">⇅</div>
+                <div class="section-label">You receive</div>
+                <div class="relative">
+                    <div class="token-selector" onclick="toggleTokenDrop('to-drop')">
+                        <div class="token-left">
+                            <div class="token-icon" id="to-icon" style="background:rgba(98,126,234,0.15);color:#627eea">⬡</div>
+                            <div><div class="token-name" id="to-name">Ethereum</div><div class="token-network" id="to-net">ERC-20</div></div>
+                        </div>
+                        <div style="font-family:'DM Mono',monospace;font-size:1rem;color:var(--muted)" id="receive-est">~0.00</div>
+                    </div>
+                    <div class="token-options" id="to-drop">
+                        <div class="token-option" onclick="selectToken('to','BTC','Bitcoin','BTC Network','₿','rgba(247,147,26,0.15)','#f7931a')"><div class="token-option-icon" style="background:rgba(247,147,26,0.15);color:#f7931a">₿</div>Bitcoin (BTC)</div>
+                        <div class="token-option" onclick="selectToken('to','ETH','Ethereum','ERC-20','⬡','rgba(98,126,234,0.15)','#627eea')"><div class="token-option-icon" style="background:rgba(98,126,234,0.15);color:#627eea">⬡</div>Ethereum (ETH)</div>
+                        <div class="token-option" onclick="selectToken('to','SOL','Solana','Solana Network','◎','rgba(153,69,255,0.15)','#9945ff')"><div class="token-option-icon" style="background:rgba(153,69,255,0.15);color:#9945ff">◎</div>Solana (SOL)</div>
+                        <div class="token-option" onclick="selectToken('to','USDC','USD Coin','ERC-20','$','rgba(39,117,202,0.15)','#2775ca')"><div class="token-option-icon" style="background:rgba(39,117,202,0.15);color:#2775ca">$</div>USD Coin (USDC)</div>
+                    </div>
+                </div>
+                <div style="margin-top:16px">
+                    <div class="section-label">Destination wallet</div>
+                    <div class="addr-wrap"><input class="addr-input" id="c-wallet" placeholder="0x... or wallet address"/></div>
+                </div>
+                <div class="section-label">Network</div>
+                <div class="network-pills">
+                    <div class="pill active" onclick="selectPill(this)">Ethereum</div>
+                    <div class="pill" onclick="selectPill(this)">Polygon</div>
+                    <div class="pill" onclick="selectPill(this)">Arbitrum</div>
+                    <div class="pill" onclick="selectPill(this)">Optimism</div>
+                </div>
+                <div class="fee-row"><span>Exchange rate</span><span id="ex-rate">1 BTC ≈ 18.4 ETH</span></div>
+                <div class="fee-row"><span>oy vey fee</span><span>50%</span></div>
+                <div class="fee-row"><span>Est. time</span><span>~2 min</span></div>
+                <button class="cta-btn" onclick="sendCrypto()">Transfer Assets →</button>
+                <div id="msg-crypto"></div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="card history-card">
+                <div class="panel-header">
+                    <div class="panel-title">Recent Transactions</div>
+                    <div class="badge-count" id="badge">0 txns</div>
+                </div>
+                <div id="tx-list"><div class="empty-state">No transactions yet</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOCIAL LINKS -->
+    <div class="social-wrapper">
+        <a href="https://www.instagram.com/a7md.gm/" target="_blank" class="social-icon instagram">
+            <span class="tooltip">Instagram</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/ahmeddnaggar" target="_blank" class="social-icon linkedin">
+            <span class="tooltip">LinkedIn</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+        </a>
+        <a href="https://github.com/AhmedGElnaggar" target="_blank" class="social-icon github">
+            <span class="tooltip">GitHub</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </a>
+    </div>
+</div>
+
+<script>
+    const API='http://localhost:8081/transactions';
+    const AUTH='http://localhost:8081/auth';
+    let currentUser = sessionStorage.getItem('ae-user') || null;
+
+    // Show/hide login
+    function checkAuth() {
+        if (currentUser) {
+            document.getElementById('login-page').classList.add('hidden');
+        }
+    }
+    checkAuth();
+
+    function switchLoginTab(type, el) {
+        document.querySelectorAll('.login-tab').forEach(t=>t.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('login-panel').style.display = type==='login' ? 'block' : 'none';
+        document.getElementById('register-panel').style.display = type==='register' ? 'block' : 'none';
+        document.getElementById('login-msg').textContent = '';
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('l-username').value.trim();
+        const password = document.getElementById('l-password').value;
+        const msg = document.getElementById('login-msg');
+        if (!username || !password) { msg.textContent='Please fill in all fields.'; msg.className='error'; return; }
+        try {
+            const res = await fetch(AUTH+'/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) });
+            if (res.ok) {
+                currentUser = username;
+                sessionStorage.setItem('ae-user', username);
+                document.getElementById('login-page').classList.add('hidden');
+                loadTransactions();
+            } else {
+                msg.textContent = 'Invalid username or password.'; msg.className = 'error';
+            }
+        } catch { msg.textContent='Cannot connect to server.'; msg.className='error'; }
+    }
+
+    async function doRegister() {
+        const username = document.getElementById('r-username').value.trim();
+        const password = document.getElementById('r-password').value;
+        const msg = document.getElementById('login-msg');
+        if (!username || !password) { msg.textContent='Please fill in all fields.'; msg.className='error'; return; }
+        try {
+            const res = await fetch(AUTH+'/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) });
+            if (res.ok) {
+                msg.textContent='✓ Account created! Please sign in.'; msg.className='';
+                switchLoginTab('login', document.querySelectorAll('.login-tab')[0]);
+            } else {
+                const data = await res.json();
+                msg.textContent = data.error || 'Registration failed.'; msg.className='error';
+            }
+        } catch { msg.textContent='Cannot connect to server.'; msg.className='error'; }
+    }
+
+    function doLogout() {
+        currentUser = null;
+        sessionStorage.removeItem('ae-user');
+        document.getElementById('login-page').classList.remove('hidden');
+    }
+
+    // Theme toggle
+    document.getElementById('theme-toggle').addEventListener('change', function() {
+        document.body.classList.toggle('light', this.checked);
+    });
+
+    let fromToken={symbol:'BTC',name:'Bitcoin',network:'BTC Network',icon:'₿',bg:'rgba(247,147,26,0.15)',color:'#f7931a'};
+    let toToken={symbol:'ETH',name:'Ethereum',network:'ERC-20',icon:'⬡',bg:'rgba(98,126,234,0.15)',color:'#627eea'};
+    const rates={BTC:{ETH:18.4,SOL:1580,USDC:97000,BTC:1},ETH:{BTC:0.054,SOL:85.8,USDC:3800,ETH:1},SOL:{BTC:0.00063,ETH:0.0116,USDC:185,SOL:1},USDC:{BTC:0.0000103,ETH:0.000263,SOL:0.0054,USDC:1}};
+    function switchTab(type,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('fiat-panel').classList.toggle('active',type==='fiat');document.getElementById('crypto-panel').classList.toggle('active',type==='crypto');}
+    function toggleTokenDrop(id){document.querySelectorAll('.token-options').forEach(d=>{if(d.id!==id)d.classList.remove('open')});document.getElementById(id).classList.toggle('open');}
+    document.addEventListener('click',e=>{if(!e.target.closest('.relative'))document.querySelectorAll('.token-options').forEach(d=>d.classList.remove('open'));});
+    function selectToken(side,symbol,name,network,icon,bg,color){const t={symbol,name,network,icon,bg,color};if(side==='from'){fromToken=t;document.getElementById('from-icon').textContent=icon;document.getElementById('from-icon').style.background=bg;document.getElementById('from-icon').style.color=color;document.getElementById('from-name').textContent=name;document.getElementById('from-net').textContent=network;}else{toToken=t;document.getElementById('to-icon').textContent=icon;document.getElementById('to-icon').style.background=bg;document.getElementById('to-icon').style.color=color;document.getElementById('to-name').textContent=name;document.getElementById('to-net').textContent=network;}document.querySelectorAll('.token-options').forEach(d=>d.classList.remove('open'));updateRate();}
+    function swapTokens(){const tmp=fromToken;selectToken('from',toToken.symbol,toToken.name,toToken.network,toToken.icon,toToken.bg,toToken.color);selectToken('to',tmp.symbol,tmp.name,tmp.network,tmp.icon,tmp.bg,tmp.color);}
+    function updateRate(){const rate=rates[fromToken.symbol]?.[toToken.symbol]||1;document.getElementById('ex-rate').textContent=`1 ${fromToken.symbol} ≈ ${rate.toLocaleString()} ${toToken.symbol}`;const amt=parseFloat(document.getElementById('c-amount')?.value)||0;document.getElementById('receive-est').textContent=amt?`~${(amt*rate).toLocaleString(undefined,{maximumFractionDigits:6})}`:'~0.00';}
+    document.addEventListener('input',e=>{if(e.target.id==='c-amount')updateRate();});
+    function selectPill(el){document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');}
+    async function sendFiat(){const sender=document.getElementById('f-sender').value.trim();const receiver=document.getElementById('f-receiver').value.trim();const amount=parseFloat(document.getElementById('f-amount').value);const msg=document.getElementById('msg');if(!sender||!receiver||isNaN(amount)||amount<=0){msg.textContent='Please fill in all fields.';msg.className='error';return;}try{const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender,receiver,amount})});if(res.ok){msg.textContent='✓ Transfer sent!';msg.className='';document.getElementById('f-sender').value='';document.getElementById('f-receiver').value='';document.getElementById('f-amount').value='';loadTransactions();}else{msg.textContent='Transfer failed.';msg.className='error';}}catch{msg.textContent='Cannot connect to server.';msg.className='error';}}
+    async function sendCrypto(){const wallet=document.getElementById('c-wallet').value.trim();const amount=parseFloat(document.getElementById('c-amount').value);const msg=document.getElementById('msg-crypto');if(!wallet||isNaN(amount)||amount<=0){msg.textContent='Please fill in all fields.';msg.className='error';return;}const rate=rates[fromToken.symbol]?.[toToken.symbol]||1;const received=+(amount*rate).toFixed(6);try{const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender:`${fromToken.symbol} Transfer`,receiver:wallet.length>16?wallet.slice(0,8)+'...'+wallet.slice(-6):wallet,amount:received})});if(res.ok){msg.textContent=`✓ Transferred ${amount} ${fromToken.symbol} → ${received} ${toToken.symbol}`;msg.className='';document.getElementById('c-amount').value='';document.getElementById('c-wallet').value='';document.getElementById('receive-est').textContent='~0.00';loadTransactions();}else{msg.textContent='Transfer failed.';msg.className='error';}}catch{msg.textContent='Cannot connect to server.';msg.className='error';}}
+    const tokenColors={BTC:'#f7931a',ETH:'#627eea',SOL:'#9945ff',USDC:'#2775ca'};
+    const tokenIcons={BTC:'₿',ETH:'⬡',SOL:'◎',USDC:'$'};
+    function getTokenStyle(name){for(const k of Object.keys(tokenColors)){if(name&&name.toUpperCase().includes(k))return{color:tokenColors[k],icon:tokenIcons[k]};}return{color:'#63b3ed',icon:'⇄'};}
+    function timeAgo(ts){const d=new Date(ts),now=new Date();const diff=Math.floor((now-d)/1000);if(diff<60)return`${diff}s ago`;if(diff<3600)return`${Math.floor(diff/60)}m ago`;return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+    async function loadTransactions(){try{const res=await fetch(API);const data=await res.json();const list=document.getElementById('tx-list');document.getElementById('badge').textContent=`${data.length} txn${data.length!==1?'s':''}`;document.getElementById('tx-count').textContent=data.length;const total=data.reduce((s,t)=>s+t.amount,0);document.getElementById('total-vol').textContent='$'+total.toLocaleString(undefined,{maximumFractionDigits:2});if(!data.length){list.innerHTML='<div class="empty-state">No transactions yet</div>';return;}list.innerHTML=[...data].reverse().map(t=>{const style=getTokenStyle(t.sender);const isCrypto=t.sender&&t.sender.includes('Transfer');return`<div class="tx-row"><div class="tx-icon" style="background:${style.color}18;color:${style.color}">${isCrypto?style.icon:'⇄'}</div><div class="tx-info"><div class="tx-title">${t.sender} → ${t.receiver}</div><div class="tx-time">${timeAgo(t.timestamp)}</div></div><div><div class="tx-amount" style="color:var(--green)">+${Number(t.amount).toLocaleString(undefined,{maximumFractionDigits:6})}</div><div class="tx-type">#${t.id}</div></div></div>`;}).join('');}catch{document.getElementById('tx-list').innerHTML='<div class="empty-state">Could not load</div>';}}
+    loadTransactions();
+    setInterval(loadTransactions,5000);
+    document.addEventListener('mousemove',e=>{document.body.style.setProperty('--mx',e.clientX+'px');document.body.style.setProperty('--my',e.clientY+'px');});
+</script>
+</body>
+</html>
