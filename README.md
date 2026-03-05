@@ -78,7 +78,6 @@ src/main/java/com/ahmed/transactionsystem/
 └── SecurityConfig.java
 ```
 
-## Ahmed Elnaggar
 
 **Ahmed Elnaggar**  
 [LinkedIn](https://www.linkedin.com/in/ahmeddnaggar) • [GitHub](https://github.com/AhmedGElnaggar) • [Instagram](https://www.instagram.com/a7md.gm/)
