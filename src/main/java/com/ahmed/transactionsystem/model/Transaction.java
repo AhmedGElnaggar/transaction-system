@@ -9,18 +9,13 @@ public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String sender;
     private String receiver;
     private double amount;
     private LocalDateTime timestamp;
-
     @PrePersist
-    public void prePersist() {
-        this.timestamp = LocalDateTime.now();
-    }
+    public void prePersist() { this.timestamp = LocalDateTime.now(); }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public String getSender() { return sender; }
     public void setSender(String sender) { this.sender = sender; }
@@ -29,4 +24,5 @@ public class Transaction {
     public double getAmount() { return amount; }
     public void setAmount(double amount) { this.amount = amount; }
     public LocalDateTime getTimestamp() { return timestamp; }
+
 }
