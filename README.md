@@ -1,6 +1,6 @@
 # AE Transaction System
 
-A full-stack financial transaction platform built with Spring Boot and vanilla JavaScript. Supports both fiat bank transfers and crypto bridge transfers with a real authentication system.
+A full-stack financial transaction platform built with Spring Boot and vanilla JavaScript. Supports both fiat bank transfers and crypto transfers with a real authentication system.
 
 ![Java](https://img.shields.io/badge/Java-17-orange) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.2-green) ![H2](https://img.shields.io/badge/Database-H2-blue) ![Security](https://img.shields.io/badge/Spring%20Security-BCrypt-red)
 
